@@ -22,8 +22,8 @@ function jsonToMarkdown(jsonFile, threshold = 80) {
     return markdown;
 }
 
-async function findComment(owner, repo, issueNumber, content) {
-    const octokit = new Octokit({auth: process.env.GITHUB_TOKEN});
+async function findComment(owner, repo, issueNumber, token, content) {
+    const octokit = github.getOctokit(token);
 
     const response = await octokit.rest.issues.listComments({
         owner,
@@ -38,7 +38,7 @@ async function findComment(owner, repo, issueNumber, content) {
 
 }
 
-function createCommentOrUpdate({
+async function createCommentOrUpdate({
                                    owner = github.context.repo.owner,
                                    repo = github.context.repo.repo,
                                    token,
@@ -46,7 +46,7 @@ function createCommentOrUpdate({
                                    content
                                }) {
 
-    const commentId = findComment(owner, repo, issueNumber, COMMENT_IDENTIFIER);
+    const commentId =  await findComment(owner, repo, issueNumber,token, COMMENT_IDENTIFIER);
     const octokit = github.getOctokit(token);
     commentId ?
         octokit.rest.issues.updateComment({
@@ -65,7 +65,7 @@ function createCommentOrUpdate({
 
 }
 
-function main() {
+async function main() {
     try {
 
         const token = core.getInput('token')
@@ -87,7 +87,7 @@ function main() {
         const threshold = parseInt(core.getInput('coverage-threshold'));
         const markdownContent = jsonToMarkdown(jsonFile, threshold);
 
-        createCommentOrUpdate({
+        await createCommentOrUpdate({
             token,
             issueNumber,
             content: markdownContent,
