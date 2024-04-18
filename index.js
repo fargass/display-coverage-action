@@ -25,43 +25,52 @@ function jsonToMarkdown(jsonFile, threshold = 80) {
 async function findComment(owner, repo, issueNumber, token, content) {
     const octokit = github.getOctokit(token);
 
-    const response = await octokit.rest.issues.listComments({
-        owner,
-        repo,
-        issue_number: issueNumber
-    });
+    try {
+        const response = await octokit.rest.issues.listComments({
+            owner,
+            repo,
+            issue_number: issueNumber
+        });
 
-    const comments = response.data;
-    const targetComment = comments.find(comment => comment.body.includes(content));
+        const comments = response.data;
+        const targetComment = comments.find(comment => comment.body.includes(content));
 
-    return targetComment?.id;
-
+        return targetComment?.id;
+    } catch (e) {
+        console.log("Cannot find coverage summary comment", e);
+        core.setFailed(e.message);
+    }
 }
 
 async function createCommentOrUpdate({
-                                   owner = github.context.repo.owner,
-                                   repo = github.context.repo.repo,
-                                   token,
-                                   issueNumber,
-                                   content
-                               }) {
+                                         owner = github.context.repo.owner,
+                                         repo = github.context.repo.repo,
+                                         token,
+                                         issueNumber,
+                                         content
+                                     }) {
 
-    const commentId =  await findComment(owner, repo, issueNumber,token, COMMENT_IDENTIFIER);
+    const commentId = await findComment(owner, repo, issueNumber, token, COMMENT_IDENTIFIER);
     const octokit = github.getOctokit(token);
-    commentId ?
-        octokit.rest.issues.updateComment({
-            owner,
-            repo,
-            issue_number: parseInt(issueNumber),
-            body: content,
-            comment_id: commentId
-        }) :
-        octokit.rest.issues.createComment({
-            owner,
-            repo,
-            issue_number: parseInt(issueNumber),
-            body: content,
-        });
+    try {
+        commentId ?
+            octokit.rest.issues.updateComment({
+                owner,
+                repo,
+                issue_number: parseInt(issueNumber),
+                body: content,
+                comment_id: commentId
+            }) :
+            octokit.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: parseInt(issueNumber),
+                body: content,
+            });
+    } catch (e) {
+        console.log("Cannot create or update coverage summary comment", e);
+        core.setFailed(e.message);
+    }
 
 }
 
@@ -94,7 +103,7 @@ async function main() {
         });
 
 
-        console.log("Markdown file and comment created successfully.");
+        console.log("Coverage summary Markdown comment created successfully.");
     } catch (error) {
         core.setFailed(error.message);
     }
