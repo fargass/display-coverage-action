@@ -16,6 +16,10 @@ inputs:
   repository:
     description: 'The full name of the repository in which to create or update a comment.'
     default: ${{ github.repository }}
+  title:
+    description: 'The title of the comment'
+    default: 'Coverage Summary'
+    required: false
 
 runs:
   using: 'node20'

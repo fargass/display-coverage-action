@@ -3,13 +3,13 @@ const github = require('@actions/github');
 const {readFileSync} = require("fs");
 
 const COMMENT_IDENTIFIER = 'coverage-summary-markdown';
-
-function jsonToMarkdown(jsonFile, threshold = 80) {
+const DEFAULT_TITLE = 'Coverage Summary';
+function jsonToMarkdown(title,jsonFile, threshold = 80) {
     const data = JSON.parse(readFileSync(jsonFile, 'utf8'));
     const summary = data.total;
 
-    let markdown = `# Coverage Summary\n\n`;
-    markdown += `<!-- ${COMMENT_IDENTIFIER} -->\n\n`;
+    let markdown = `# ${title ?? DEFAULT_TITLE}\n\n`;
+    markdown += `<!-- ${jsonFile} -->\n\n`;
     markdown += `| Category     | Total    | Covered  | Skipped  | Percentage | Status   |\n`;
     markdown += `|--------------|----------|----------|----------|------------|----------|\n`;
 
@@ -43,6 +43,7 @@ async function findComment(owner, repo, issueNumber, token, content) {
 }
 
 async function createCommentOrUpdate({
+                                         title=COMMENT_IDENTIFIER,
                                          owner = github.context.repo.owner,
                                          repo = github.context.repo.repo,
                                          token,
@@ -50,7 +51,7 @@ async function createCommentOrUpdate({
                                          content
                                      }) {
 
-    const commentId = await findComment(owner, repo, issueNumber, token, COMMENT_IDENTIFIER);
+    const commentId = await findComment(owner, repo, issueNumber, token,title);
     const octokit = github.getOctokit(token);
     try {
         commentId ?
@@ -94,9 +95,10 @@ async function main() {
         }
 
         const threshold = parseInt(core.getInput('coverage-threshold'));
-        const markdownContent = jsonToMarkdown(jsonFile, threshold);
+        const markdownContent = jsonToMarkdown(core.getInput('title'),jsonFile, threshold);
 
         await createCommentOrUpdate({
+            title: core.getInput('title'),
             token,
             issueNumber,
             content: markdownContent,
