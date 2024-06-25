@@ -4,7 +4,7 @@ const {readFileSync} = require("fs");
 
 const COMMENT_IDENTIFIER = 'coverage-summary-markdown';
 const DEFAULT_TITLE = 'Coverage Summary';
-function jsonToMarkdown(title,jsonFile, threshold = 80) {
+function jsonToMarkdown(title,jsonFile, displayedLines, threshold = 80) {
     const data = JSON.parse(readFileSync(jsonFile, 'utf8'));
     const summary = data.total;
 
@@ -14,6 +14,7 @@ function jsonToMarkdown(title,jsonFile, threshold = 80) {
     markdown += `|--------------|----------|----------|----------|------------|----------|\n`;
 
     for (let key in summary) {
+        if (!displayedLines.includes(key)) continue;
         const coverage = summary[key];
         const emoji = coverage.pct >= threshold ? '✅' : '❌';
         markdown += `| ${key} | ${coverage.total} | ${coverage.covered} | ${coverage.skipped} | ${coverage.pct}% | ${emoji} |\n`;
@@ -77,7 +78,6 @@ async function createCommentOrUpdate({
 
 async function main() {
     try {
-
         const token = core.getInput('token')
 
         if (!token) {
@@ -89,13 +89,15 @@ async function main() {
             throw new Error("JSON_FILE is required.");
         }
 
+        const displayedLines = core.getInput('displayed-lines').split(',')
+
         const issueNumber = core.getInput('issue-number');
         if (!issueNumber) {
             throw new Error("ISSUE_NUMBER is required.");
         }
 
         const threshold = parseInt(core.getInput('coverage-threshold'));
-        const markdownContent = jsonToMarkdown(core.getInput('title'),jsonFile, threshold);
+        const markdownContent = jsonToMarkdown(core.getInput('title'),jsonFile, displayedLines, threshold);
 
         await createCommentOrUpdate({
             title: core.getInput('title'),

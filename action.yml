@@ -7,6 +7,10 @@ inputs:
   coverage-threshold:
     description: 'The coverage threshold for emoji inclusion'
     required: true
+  displayed-lines:
+    description: 'Comma separated list of lines to display in the summary'
+    required: false
+    default: 'lines,statements,branches'
   issue-number:
     description: 'The issue number to comment on'
     required: true
